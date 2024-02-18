@@ -1,7 +1,7 @@
 import os
 import requests
 import json
-import openai   
+import openai
 import reflex as rx
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -9,7 +9,6 @@ openai.api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
 BAIDU_API_KEY = os.getenv("BAIDU_API_KEY")
 BAIDU_SECRET_KEY = os.getenv("BAIDU_SECRET_KEY")
-
 
 
 if not openai.api_key and not BAIDU_API_KEY:
@@ -37,10 +36,11 @@ class QA(rx.Base):
 
 
 DEFAULT_CHATS = {
-    "Intros": [],
+    "Chat": [],
 }
 
 from typing import List, Dict
+
 
 class State(rx.State):
     """The app state."""
@@ -49,7 +49,7 @@ class State(rx.State):
     chats: Dict[str, List[QA]] = DEFAULT_CHATS
 
     # The current chat name.
-    current_chat = "Intros"
+    current_chat = "Chat"
 
     # The current question.
     question: str
@@ -76,6 +76,12 @@ class State(rx.State):
 
     api_type: str = "baidu" if BAIDU_API_KEY else "openai"
 
+    og_answers: List[str] = []
+
+    changed_answers: List[str] = []
+
+    model: str = "ChatGPT"
+
     def create_chat(self):
         """Create a new chat."""
         # Add the new chat to the list of chats.
@@ -84,6 +90,12 @@ class State(rx.State):
 
         # Toggle the modal.
         self.modal_open = False
+
+    def change_chat_mouse_enter(self):
+        self.chats[self.current_chat][-1].answer = self.og_answers[-1]
+
+    def change_chat_mouse_leave(self):
+        self.chats[self.current_chat][-1].answer = self.changed_answers[-1]
 
     def toggle_modal(self):
         """Toggle the new chat modal."""
@@ -110,6 +122,9 @@ class State(rx.State):
         self.current_chat = chat_name
         self.toggle_drawer()
 
+    def set_model(self, model: str):
+        self.model = model
+
     @rx.var
     def chat_titles(self) -> List[str]:
         """Get the list of chat titles.
@@ -119,43 +134,38 @@ class State(rx.State):
         """
         return list(self.chats.keys())
 
-
     async def confirm_send_question(self):
         question = self.private_text
         self.modal_open = False
         self.processing = True
 
         # Add the question to the list of questions.
-        qa = QA(question=question, answer="")
+        qa = QA(question=self.unprivate_text, answer="")
         self.chats[self.current_chat].append(qa)
 
-        messages = [
-            {"role": "system", "content": "You are a friendly chatbot named Reflex."}
-        ]
-        for qa in self.chats[self.current_chat]:
-            messages.append({"role": "user", "content": qa.question})
-            messages.append({"role": "assistant", "content": qa.answer})
-
-        # Remove the last mock answer.
-        messages = messages[:-1]
-
         # Start a new session to answer the question.
-        session = openai.ChatCompletion.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
-            messages=messages,
-            stream=False,
+        response = requests.post(
+            "https://151e-68-65-175-22.ngrok-free.app/ai/",
+            json={"bare_prompt": question, "model": self.model},
+            headers={"Content-Type": "application/json", "accept": "application/json"},
         )
 
+        data = response.json()
+        self.og_answers.append(data["message"]["content"])
+
         # api request - censored_prompt, censoring_dict
-        response = requests.post("https://23e4-68-65-175-62.ngrok-free.app/ai/uncensor", json={
-            "censored_prompt": session.choices[0].message.content,
-            "censoring_dict": dict(self.private_dict)
-        }, headers={
-            "Content-Type": "application/json",
-            "accept": "application/json"
-        }) 
+        response = requests.post(
+            "https://151e-68-65-175-22.ngrok-free.app/ai/uncensor",
+            json={
+                "censored_prompt": data["message"]["content"],
+                "censoring_dict": dict(self.private_dict),
+                "model": self.model
+            },
+            headers={"Content-Type": "application/json", "accept": "application/json"},
+        )
 
         data = response.json()
+        self.changed_answers.append(data)
 
         self.chats[self.current_chat][-1].answer = data
         self.chats = self.chats
@@ -168,7 +178,7 @@ class State(rx.State):
         question = form_data["question"]
         if question == None:
             return
-        
+
         self.modal_open = True
         self.private_dict_str = "Loading..."
         self.private_text = "Loading..."
@@ -198,19 +208,19 @@ class State(rx.State):
         self.processing = True
         yield
 
-        response = requests.post("https://23e4-68-65-175-62.ngrok-free.app/ai/replacement", json={
-            "insecure_prompt": question
-        }, headers={
-            "Content-Type": "application/json",
-            "accept": "application/json"
-
-        })
+        response = requests.post(
+            "https://151e-68-65-175-22.ngrok-free.app/ai/replacement",
+            json={"insecure_prompt": question, "model": self.model},
+            headers={"Content-Type": "application/json", "accept": "application/json"},
+        )
 
         data = response.json()
         self.private_dict = data
         self.private_dict_str = ""
-        for key, val in data.items():
-            self.private_dict_str += key + " --> " + val + "\n"
+        for index, (key, val) in enumerate(data.items()):
+            self.private_dict_str += key + " → " + val
+            if index != len(data.items())-1:
+                self.private_dict_str += " | "
 
         if self.private_dict_str == "":
             self.private_dict_str = "No replacements!"
@@ -218,7 +228,6 @@ class State(rx.State):
         self.private_text = self.unprivate_text
         for key in data.keys():
             self.private_text = self.private_text.replace(key, data[key])
-        print(self.unprivate_text)
 
         # Toggle the processing flag.
         self.processing = False
@@ -262,3 +271,60 @@ class State(rx.State):
             yield
         # Toggle the processing flag.
         self.processing = False
+
+
+def fetch_history():
+    """return {
+        "history": [
+            {
+                "sanitized_prompt": "Write an email telling Rob he has HPV",
+                "proofs": [123, 456, 789],
+                "proven": True,
+            },
+            {
+                "sanitized_prompt": "Write python "
+                "code that connects to the OpenAI API with my API key sk_123abc123",
+                "proofs": [123, 456, 789],
+                "proven": True,
+            },
+            {
+                "sanitized_prompt": "My patient name=John Doe is 5'11 and has a BMI of 28, with a diagnosis of hypertension. Write a formal note for the insurance company",
+                "proofs": [123, 456, 789],
+                "proven": False,
+            },
+        ],
+    }
+    """
+    history_request = requests.get(
+        "https://151e-68-65-175-22.ngrok-free.app/ai/history"
+    )
+    history = history_request.json()
+    # Turn this into just a list of lists that contain the values
+    clean_history = []
+    for item in history["history"]:
+        clean_history.append(
+            [
+                item["sanitized_prompt"],
+                item["proofs"],
+                str(item["proven"]),
+            ]
+        )
+    return clean_history
+
+
+class AdminState(rx.State):
+    history: List[str]
+    columns: List[str] = ["Prompt", "Proofs", "Proven"]
+
+    def get_data(self):
+        self.history = fetch_history()
+
+    def verify(self):
+        for group in self.history:
+            prompt = group[0]
+            response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/prove", json={
+                "prompt": prompt,
+            }, headers={
+                "Content-Type": "application/json",
+                "accept": "application/json"
+            })

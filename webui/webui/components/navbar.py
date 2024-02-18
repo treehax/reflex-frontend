@@ -21,10 +21,21 @@ def navbar():
                 ),
                 rx.chakra.breadcrumb(
                     rx.chakra.breadcrumb_item(
-                        rx.chakra.heading("ReflexGPT", size="sm"),
+                        rx.chakra.heading("CloakAI", size="sm"),
                     ),
                     rx.chakra.breadcrumb_item(
                         rx.chakra.text(State.current_chat, size="sm", font_weight="normal"),
+                    ),
+                ),
+                rx.menu.root(
+                    rx.menu.trigger(
+                        rx.button("Choose Model", variant="soft", size="2", color_scheme='ruby'),
+                    ),
+                    rx.menu.content(
+                        rx.menu.item("ChatGPT", on_click=State.set_model("ChatGPT")),
+                        rx.menu.item("Intel", on_click=State.set_model("Intel")),
+                        rx.menu.item("MonsterAPI", on_click=State.set_model("MonsterAPI")),
+                        size="2",
                     ),
                 ),
             ),
