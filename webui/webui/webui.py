@@ -4,7 +4,7 @@ import reflex as rx
 
 from webui import styles
 from webui.components import chat, modal, navbar, sidebar
-from webui.state import State
+from webui.state import AdminState, State
 
 
 def index() -> rx.Component:
@@ -23,6 +23,15 @@ def index() -> rx.Component:
     )
 
 
+def admin() -> rx.Component:
+    """The admin panel."""
+    return rx.data_table(
+        data=AdminState.history,
+        columns=AdminState.columns,
+    )
+
+
 # Add state and page to the app.
 app = rx.App(style=styles.base_style)
 app.add_page(index)
+app.add_page(admin, on_load=AdminState.get_data)
