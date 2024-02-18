@@ -76,6 +76,10 @@ class State(rx.State):
 
     api_type: str = "baidu" if BAIDU_API_KEY else "openai"
 
+    og_answers: List[str] = []
+
+    changed_answers: List[str] = []
+
     def create_chat(self):
         """Create a new chat."""
         # Add the new chat to the list of chats.
@@ -84,6 +88,12 @@ class State(rx.State):
 
         # Toggle the modal.
         self.modal_open = False
+
+    def change_chat_mouse_enter(self):
+        self.chats[self.current_chat][-1].answer = self.og_answers[-1]
+
+    def change_chat_mouse_leave(self):
+        self.chats[self.current_chat][-1].answer = self.changed_answers[-1]
 
     def toggle_modal(self):
         """Toggle the new chat modal."""
@@ -136,6 +146,7 @@ class State(rx.State):
         )
 
         data = response.json()
+        self.og_answers.append(data["message"]["content"])
 
         # api request - censored_prompt, censoring_dict
         response = requests.post(
@@ -148,6 +159,7 @@ class State(rx.State):
         )
 
         data = response.json()
+        self.changed_answers.append(data)
 
         self.chats[self.current_chat][-1].answer = data
         self.chats = self.chats
@@ -199,8 +211,10 @@ class State(rx.State):
         data = response.json()
         self.private_dict = data
         self.private_dict_str = ""
-        for key, val in data.items():
-            self.private_dict_str += key + " → " + val + "\n"
+        for index, (key, val) in enumerate(data.items()):
+            self.private_dict_str += key + " → " + val
+            if index != len(data.items())-1:
+                self.private_dict_str += " | "
 
         if self.private_dict_str == "":
             self.private_dict_str = "No replacements!"

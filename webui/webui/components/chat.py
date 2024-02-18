@@ -42,7 +42,7 @@ def message(qa: QA) -> rx.Component:
 def chat() -> rx.Component:
     """List all the messages in a single conversation."""
     return rx.chakra.vstack(
-        rx.chakra.box(rx.foreach(State.chats[State.current_chat], message)),
+        rx.chakra.box(rx.foreach(State.chats[State.current_chat], message), on_mouse_enter=State.change_chat_mouse_enter, on_mouse_leave=State.change_chat_mouse_leave),
         py="8",
         flex="1",
         width="100%",
