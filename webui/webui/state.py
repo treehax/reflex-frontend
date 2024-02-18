@@ -80,6 +80,8 @@ class State(rx.State):
 
     changed_answers: List[str] = []
 
+    model: str = "ChatGPT"
+
     def create_chat(self):
         """Create a new chat."""
         # Add the new chat to the list of chats.
@@ -120,6 +122,9 @@ class State(rx.State):
         self.current_chat = chat_name
         self.toggle_drawer()
 
+    def set_model(self, model: str):
+        self.model = model
+
     @rx.var
     def chat_titles(self) -> List[str]:
         """Get the list of chat titles.
@@ -141,7 +146,7 @@ class State(rx.State):
         # Start a new session to answer the question.
         response = requests.post(
             "https://151e-68-65-175-22.ngrok-free.app/ai/",
-            json={"bare_prompt": question},
+            json={"bare_prompt": question, "model": self.model},
             headers={"Content-Type": "application/json", "accept": "application/json"},
         )
 
@@ -154,6 +159,7 @@ class State(rx.State):
             json={
                 "censored_prompt": data["message"]["content"],
                 "censoring_dict": dict(self.private_dict),
+                "model": self.model
             },
             headers={"Content-Type": "application/json", "accept": "application/json"},
         )
@@ -204,7 +210,7 @@ class State(rx.State):
 
         response = requests.post(
             "https://151e-68-65-175-22.ngrok-free.app/ai/replacement",
-            json={"insecure_prompt": question},
+            json={"insecure_prompt": question, "model": self.model},
             headers={"Content-Type": "application/json", "accept": "application/json"},
         )
 
@@ -312,4 +318,13 @@ class AdminState(rx.State):
 
     def get_data(self):
         self.history = fetch_history()
-        print(self.history)
+
+    def verify(self):
+        for group in self.history:
+            prompt = group[0]
+            response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/prove", json={
+                "prompt": prompt,
+            }, headers={
+                "Content-Type": "application/json",
+                "accept": "application/json"
+            })

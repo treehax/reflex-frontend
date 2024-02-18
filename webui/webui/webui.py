@@ -25,9 +25,23 @@ def index() -> rx.Component:
 
 def admin() -> rx.Component:
     """The admin panel."""
-    return rx.data_table(
-        data=AdminState.history,
-        columns=AdminState.columns,
+    return rx.vstack(
+        rx.data_table(
+            data=AdminState.history,
+            columns=AdminState.columns,
+        ),
+        rx.button(
+            "Verify",
+            padding="10px",
+            margin="10px",
+            background_color="#d43552",
+            size="3",
+            align="center",
+            width="100px",
+            height="40px",
+            on_click=AdminState.verify
+        ),
+        align="center",
     )
 
 

@@ -27,6 +27,17 @@ def navbar():
                         rx.chakra.text(State.current_chat, size="sm", font_weight="normal"),
                     ),
                 ),
+                rx.menu.root(
+                    rx.menu.trigger(
+                        rx.button("Choose Model", variant="soft", size="2", color_scheme='ruby'),
+                    ),
+                    rx.menu.content(
+                        rx.menu.item("ChatGPT", on_click=State.set_model("ChatGPT")),
+                        rx.menu.item("Intel", on_click=State.set_model("Intel")),
+                        rx.menu.item("MonsterAPI", on_click=State.set_model("MonsterAPI")),
+                        size="2",
+                    ),
+                ),
             ),
             
             justify="space-between",
