@@ -66,6 +66,14 @@ class State(rx.State):
     # Whether the modal is open.
     modal_open: bool = False
 
+    unprivate_text: str = ""
+
+    private_text: str = ""
+
+    private_dict_str: str = ""
+
+    private_dict: dict = {}
+
     api_type: str = "baidu" if BAIDU_API_KEY else "openai"
 
     def create_chat(self):
@@ -111,9 +119,59 @@ class State(rx.State):
         """
         return list(self.chats.keys())
 
+
+    async def confirm_send_question(self):
+        question = self.private_text
+        self.modal_open = False
+        self.processing = True
+
+        # Add the question to the list of questions.
+        qa = QA(question=question, answer="")
+        self.chats[self.current_chat].append(qa)
+
+        messages = [
+            {"role": "system", "content": "You are a friendly chatbot named Reflex."}
+        ]
+        for qa in self.chats[self.current_chat]:
+            messages.append({"role": "user", "content": qa.question})
+            messages.append({"role": "assistant", "content": qa.answer})
+
+        # Remove the last mock answer.
+        messages = messages[:-1]
+
+        # Start a new session to answer the question.
+        session = openai.ChatCompletion.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+            messages=messages,
+            stream=False,
+        )
+
+        # api request - censored_prompt, censoring_dict
+        response = requests.post("https://23e4-68-65-175-62.ngrok-free.app/ai/uncensor", json={
+            "censored_prompt": session.choices[0].message.content,
+            "censoring_dict": dict(self.private_dict)
+        }, headers={
+            "Content-Type": "application/json",
+            "accept": "application/json"
+        }) 
+
+        data = response.json()
+
+        self.chats[self.current_chat][-1].answer = data
+        self.chats = self.chats
+
+        # Toggle the processing flag.
+        self.processing = False
+
     async def process_question(self, form_data: Dict[str, str]):
         # Get the question from the form
         question = form_data["question"]
+        if question == None:
+            return
+        
+        self.modal_open = True
+        self.private_dict_str = "Loading..."
+        self.private_text = "Loading..."
 
         # Check if the question is empty
         if question == "":
@@ -134,39 +192,33 @@ class State(rx.State):
             form_data: A dict with the current question.
         """
 
-        # Add the question to the list of questions.
-        qa = QA(question=question, answer="")
-        self.chats[self.current_chat].append(qa)
+        self.unprivate_text = question
 
         # Clear the input and start the processing.
         self.processing = True
         yield
 
-        # Build the messages.
-        messages = [
-            {"role": "system", "content": "You are a friendly chatbot named Reflex."}
-        ]
-        for qa in self.chats[self.current_chat]:
-            messages.append({"role": "user", "content": qa.question})
-            messages.append({"role": "assistant", "content": qa.answer})
+        response = requests.post("https://23e4-68-65-175-62.ngrok-free.app/ai/replacement", json={
+            "insecure_prompt": question
+        }, headers={
+            "Content-Type": "application/json",
+            "accept": "application/json"
 
-        # Remove the last mock answer.
-        messages = messages[:-1]
+        })
 
-        # Start a new session to answer the question.
-        session = openai.ChatCompletion.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
-            messages=messages,
-            stream=True,
-        )
+        data = response.json()
+        self.private_dict = data
+        self.private_dict_str = ""
+        for key, val in data.items():
+            self.private_dict_str += key + " --> " + val + "\n"
 
-        # Stream the results, yielding after every word.
-        for item in session:
-            if hasattr(item.choices[0].delta, "content"):
-                answer_text = item.choices[0].delta.content
-                self.chats[self.current_chat][-1].answer += answer_text
-                self.chats = self.chats
-                yield
+        if self.private_dict_str == "":
+            self.private_dict_str = "No replacements!"
+
+        self.private_text = self.unprivate_text
+        for key in data.keys():
+            self.private_text = self.private_text.replace(key, data[key])
+        print(self.unprivate_text)
 
         # Toggle the processing flag.
         self.processing = False

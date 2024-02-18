@@ -9,7 +9,7 @@ def modal() -> rx.Component:
             rx.chakra.modal_content(
                 rx.chakra.modal_header(
                     rx.chakra.hstack(
-                        rx.chakra.text("Create new chat"),
+                        rx.chakra.text("Is your data hidden?"),
                         rx.chakra.icon(
                             tag="close",
                             font_size="sm",
@@ -23,24 +23,49 @@ def modal() -> rx.Component:
                     )
                 ),
                 rx.chakra.modal_body(
-                    rx.chakra.input(
-                        placeholder="Type something...",
-                        on_blur=State.set_new_chat_name,
-                        bg="#222",
-                        border_color="#fff3",
-                        _placeholder={"color": "#fffa"},
-                    ),
+                    rx.hstack(
+                        rx.box(
+                            State.unprivate_text,
+                            color="#fff",
+                            max_width="100%",
+                            background_color="#3b3b3b",
+                            width="33vh",
+                            height="50vh",
+                            margin="10px",
+                            padding="10px"
+                        ),
+                        rx.box(
+                            State.private_dict_str,
+                            color="#fff",
+                            max_width="100%",
+                            background_color="#3b3b3b",
+                            width="33vh",
+                            height="50vh",
+                            margin="10px",
+                            padding="10px"
+                        ),
+                        rx.box(
+                            State.private_text,
+                            color="#fff",
+                            max_width="100%",
+                            background_color="#3b3b3b",
+                            width="33vh",
+                            height="50vh",
+                            margin="10px",
+                            padding="10px"
+                        )
+                    )
                 ),
                 rx.chakra.modal_footer(
                     rx.chakra.button(
-                        "Create",
+                        "Send",
                         bg="#5535d4",
                         box_shadow="md",
                         px="4",
                         py="2",
                         h="auto",
                         _hover={"bg": "#4c2db3"},
-                        on_click=State.create_chat,
+                        on_click=State.confirm_send_question,
                     ),
                 ),
                 bg="#222",
