@@ -3,6 +3,7 @@ import reflex as rx
 from webui import styles
 from webui.state import State
 
+from typing import Literal
 
 def navbar():
     return rx.chakra.box(
@@ -43,10 +44,10 @@ def navbar():
                     on_click=State.toggle_modal,
                 ),
                 rx.chakra.menu(
-                    rx.chakra.menu_button(
-                        rx.chakra.avatar(name="User", size="md"),
-                        rx.chakra.box(),
-                    ),
+                    # rx.chakra.menu_button(
+                    #     rx.chakra.avatar(name="User", size="md"),
+                    #     rx.chakra.box(),
+                    # ),
                     rx.chakra.menu_list(
                         rx.chakra.menu_item("Help"),
                         rx.chakra.menu_divider(),

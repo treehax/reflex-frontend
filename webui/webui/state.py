@@ -1,7 +1,7 @@
 import os
 import requests
 import json
-import openai
+import openai   
 import reflex as rx
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -9,6 +9,7 @@ openai.api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
 BAIDU_API_KEY = os.getenv("BAIDU_API_KEY")
 BAIDU_SECRET_KEY = os.getenv("BAIDU_SECRET_KEY")
+
 
 
 if not openai.api_key and not BAIDU_API_KEY:
@@ -39,12 +40,13 @@ DEFAULT_CHATS = {
     "Intros": [],
 }
 
+from typing import List, Dict
 
 class State(rx.State):
     """The app state."""
 
     # A dict from the chat name to the list of questions and answers.
-    chats: dict[str, list[QA]] = DEFAULT_CHATS
+    chats: Dict[str, List[QA]] = DEFAULT_CHATS
 
     # The current chat name.
     current_chat = "Intros"
@@ -101,7 +103,7 @@ class State(rx.State):
         self.toggle_drawer()
 
     @rx.var
-    def chat_titles(self) -> list[str]:
+    def chat_titles(self) -> List[str]:
         """Get the list of chat titles.
 
         Returns:
@@ -109,7 +111,7 @@ class State(rx.State):
         """
         return list(self.chats.keys())
 
-    async def process_question(self, form_data: dict[str, str]):
+    async def process_question(self, form_data: Dict[str, str]):
         # Get the question from the form
         question = form_data["question"]
 
