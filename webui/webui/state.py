@@ -1,7 +1,7 @@
 import os
 import requests
 import json
-import openai   
+import openai
 import reflex as rx
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -9,7 +9,6 @@ openai.api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
 BAIDU_API_KEY = os.getenv("BAIDU_API_KEY")
 BAIDU_SECRET_KEY = os.getenv("BAIDU_SECRET_KEY")
-
 
 
 if not openai.api_key and not BAIDU_API_KEY:
@@ -41,6 +40,7 @@ DEFAULT_CHATS = {
 }
 
 from typing import List, Dict
+
 
 class State(rx.State):
     """The app state."""
@@ -119,7 +119,6 @@ class State(rx.State):
         """
         return list(self.chats.keys())
 
-
     async def confirm_send_question(self):
         question = self.private_text
         self.modal_open = False
@@ -130,23 +129,23 @@ class State(rx.State):
         self.chats[self.current_chat].append(qa)
 
         # Start a new session to answer the question.
-        response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/", json={
-            "bare_prompt": question
-        }, headers={
-            "Content-Type": "application/json",
-            "accept": "application/json"
-        })
-        
+        response = requests.post(
+            "https://151e-68-65-175-22.ngrok-free.app/ai/",
+            json={"bare_prompt": question},
+            headers={"Content-Type": "application/json", "accept": "application/json"},
+        )
+
         data = response.json()
 
         # api request - censored_prompt, censoring_dict
-        response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/uncensor", json={
-            "censored_prompt": data["message"]["content"],
-            "censoring_dict": dict(self.private_dict)
-        }, headers={
-            "Content-Type": "application/json",
-            "accept": "application/json"
-        }) 
+        response = requests.post(
+            "https://151e-68-65-175-22.ngrok-free.app/ai/uncensor",
+            json={
+                "censored_prompt": data["message"]["content"],
+                "censoring_dict": dict(self.private_dict),
+            },
+            headers={"Content-Type": "application/json", "accept": "application/json"},
+        )
 
         data = response.json()
 
@@ -161,7 +160,7 @@ class State(rx.State):
         question = form_data["question"]
         if question == None:
             return
-        
+
         self.modal_open = True
         self.private_dict_str = "Loading..."
         self.private_text = "Loading..."
@@ -191,13 +190,11 @@ class State(rx.State):
         self.processing = True
         yield
 
-        response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/replacement", json={
-            "insecure_prompt": question
-        }, headers={
-            "Content-Type": "application/json",
-            "accept": "application/json"
-
-        })
+        response = requests.post(
+            "https://151e-68-65-175-22.ngrok-free.app/ai/replacement",
+            json={"insecure_prompt": question},
+            headers={"Content-Type": "application/json", "accept": "application/json"},
+        )
 
         data = response.json()
         self.private_dict = data
@@ -254,3 +251,51 @@ class State(rx.State):
             yield
         # Toggle the processing flag.
         self.processing = False
+
+
+def fetch_history():
+    """return {
+        "history": [
+            {
+                "sanitized_prompt": "Write an email telling Rob he has HPV",
+                "proofs": [123, 456, 789],
+                "proven": True,
+            },
+            {
+                "sanitized_prompt": "Write python "
+                "code that connects to the OpenAI API with my API key sk_123abc123",
+                "proofs": [123, 456, 789],
+                "proven": True,
+            },
+            {
+                "sanitized_prompt": "My patient name=John Doe is 5'11 and has a BMI of 28, with a diagnosis of hypertension. Write a formal note for the insurance company",
+                "proofs": [123, 456, 789],
+                "proven": False,
+            },
+        ],
+    }
+    """
+    history_request = requests.get(
+        "https://151e-68-65-175-22.ngrok-free.app/ai/history"
+    )
+    history = history_request.json()
+    # Turn this into just a list of lists that contain the values
+    clean_history = []
+    for item in history["history"]:
+        clean_history.append(
+            [
+                item["sanitized_prompt"],
+                item["proofs"],
+                str(item["proven"]),
+            ]
+        )
+    return clean_history
+
+
+class AdminState(rx.State):
+    history: List[str]
+    columns: List[str] = ["Prompt", "Proofs", "Proven"]
+
+    def get_data(self):
+        self.history = fetch_history()
+        print(self.history)
