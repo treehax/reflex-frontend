@@ -5,9 +5,9 @@ bg_medium_color = "#222"
 
 border_color = "#fff3"
 
-accennt_light = "#6649D8"
-accent_color = "#5535d4"
-accent_dark = "#4c2db3"
+accennt_light = "#d8496a"
+accent_color = "#d43552"
+accent_dark = "#b32d41"
 
 icon_color = "#fff8"
 

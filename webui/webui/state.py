@@ -37,7 +37,7 @@ class QA(rx.Base):
 
 
 DEFAULT_CHATS = {
-    "Intros": [],
+    "Chat": [],
 }
 
 from typing import List, Dict
@@ -49,7 +49,7 @@ class State(rx.State):
     chats: Dict[str, List[QA]] = DEFAULT_CHATS
 
     # The current chat name.
-    current_chat = "Intros"
+    current_chat = "Chat"
 
     # The current question.
     question: str
@@ -126,29 +126,22 @@ class State(rx.State):
         self.processing = True
 
         # Add the question to the list of questions.
-        qa = QA(question=question, answer="")
+        qa = QA(question=self.unprivate_text, answer="")
         self.chats[self.current_chat].append(qa)
 
-        messages = [
-            {"role": "system", "content": "You are a friendly chatbot named Reflex."}
-        ]
-        for qa in self.chats[self.current_chat]:
-            messages.append({"role": "user", "content": qa.question})
-            messages.append({"role": "assistant", "content": qa.answer})
-
-        # Remove the last mock answer.
-        messages = messages[:-1]
-
         # Start a new session to answer the question.
-        session = openai.ChatCompletion.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
-            messages=messages,
-            stream=False,
-        )
+        response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/", json={
+            "bare_prompt": question
+        }, headers={
+            "Content-Type": "application/json",
+            "accept": "application/json"
+        })
+        
+        data = response.json()
 
         # api request - censored_prompt, censoring_dict
-        response = requests.post("https://23e4-68-65-175-62.ngrok-free.app/ai/uncensor", json={
-            "censored_prompt": session.choices[0].message.content,
+        response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/uncensor", json={
+            "censored_prompt": data["message"]["content"],
             "censoring_dict": dict(self.private_dict)
         }, headers={
             "Content-Type": "application/json",
@@ -198,7 +191,7 @@ class State(rx.State):
         self.processing = True
         yield
 
-        response = requests.post("https://23e4-68-65-175-62.ngrok-free.app/ai/replacement", json={
+        response = requests.post("https://151e-68-65-175-22.ngrok-free.app/ai/replacement", json={
             "insecure_prompt": question
         }, headers={
             "Content-Type": "application/json",
@@ -210,7 +203,7 @@ class State(rx.State):
         self.private_dict = data
         self.private_dict_str = ""
         for key, val in data.items():
-            self.private_dict_str += key + " --> " + val + "\n"
+            self.private_dict_str += key + " → " + val + "\n"
 
         if self.private_dict_str == "":
             self.private_dict_str = "No replacements!"
@@ -218,7 +211,6 @@ class State(rx.State):
         self.private_text = self.unprivate_text
         for key in data.keys():
             self.private_text = self.private_text.replace(key, data[key])
-        print(self.unprivate_text)
 
         # Toggle the processing flag.
         self.processing = False
