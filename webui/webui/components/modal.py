@@ -27,9 +27,8 @@ def modal() -> rx.Component:
                         rx.box(
                             State.unprivate_text,
                             color="#fff",
-                            max_width="100%",
                             background_color="#3b3b3b",
-                            width="33vh",
+                            max_w="5xl",
                             height="50vh",
                             margin="10px",
                             padding="10px"
@@ -37,9 +36,9 @@ def modal() -> rx.Component:
                         rx.box(
                             State.private_dict_str,
                             color="#fff",
-                            max_width="100%",
                             background_color="#3b3b3b",
-                            width="33vh",
+                            width="100vw",
+                            max_w="5xl",
                             height="50vh",
                             margin="10px",
                             padding="10px"
@@ -47,9 +46,9 @@ def modal() -> rx.Component:
                         rx.box(
                             State.private_text,
                             color="#fff",
-                            max_width="100%",
                             background_color="#3b3b3b",
-                            width="33vh",
+                            width="100vw",
+                            max_w="5xl",
                             height="50vh",
                             margin="10px",
                             padding="10px"
@@ -59,12 +58,12 @@ def modal() -> rx.Component:
                 rx.chakra.modal_footer(
                     rx.chakra.button(
                         "Send",
-                        bg="#5535d4",
+                        bg="#d43552",
                         box_shadow="md",
                         px="4",
                         py="2",
                         h="auto",
-                        _hover={"bg": "#4c2db3"},
+                        _hover={"bg": "#b32d41"},
                         on_click=State.confirm_send_question,
                     ),
                 ),

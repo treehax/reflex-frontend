@@ -86,7 +86,7 @@ def action_bar() -> rx.Component:
                 width="100%",
             ),
             rx.chakra.text(
-                "Reflex",
+                "CloakAI",
                 font_size="xs",
                 color="#fff6",
                 text_align="center",

@@ -21,7 +21,7 @@ def navbar():
                 ),
                 rx.chakra.breadcrumb(
                     rx.chakra.breadcrumb_item(
-                        rx.chakra.heading("ReflexGPT", size="sm"),
+                        rx.chakra.heading("CloakAI", size="sm"),
                     ),
                     rx.chakra.breadcrumb_item(
                         rx.chakra.text(State.current_chat, size="sm", font_weight="normal"),
